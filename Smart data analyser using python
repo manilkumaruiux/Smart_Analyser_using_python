@@ -1,0 +1,59 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.stats import zscore
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import KBinsDiscretizer
+
+data = {
+    'ID': [1, 2, 3, 4, 5, 6, 7],
+    'Age': [25, np.nan, 45, 30, 50, 27, 23],
+    'Salary': [50000, 60000, np.nan, 40000, 120000, 80000, 2000000],
+    'Department': ['IT', 'HR', 'IT', 'Sales', 'HR', 'IT', 'Sales'],
+    'Years_of_Experience': [3, 5, 15, np.nan, 20, 8, 2],
+    'Target_Class': [1, 0, 1, 0, 1, 1, 0]
+}
+
+df = pd.DataFrame(data)
+
+print(" Initial Dataset Shape:", df.shape)
+print("\n Missing Values:\n", df.isnull().sum())
+print("\n Basic Statistics:\n", df.describe())
+
+selected_df = df[['Age', 'Salary', 'Years_of_Experience', 'Target_Class']]
+
+age_imputer = SimpleImputer(strategy='mean')
+selected_df['Age'] = age_imputer.fit_transform(selected_df[['Age']])
+
+salary_imputer = SimpleImputer(strategy='median')
+selected_df['Salary'] = salary_imputer.fit_transform(selected_df[['Salary']])
+
+exp_imputer = SimpleImputer(strategy='mean')
+selected_df['Years_of_Experience'] = exp_imputer.fit_transform(selected_df[['Years_of_Experience']])
+
+discretizer = KBinsDiscretizer(n_bins=3, encode='ordinal', strategy='uniform')
+selected_df['Salary_Bin'] = discretizer.fit_transform(selected_df[['Salary']])
+
+z_scores = zscore(selected_df['Salary'])
+outliers = selected_df[np.abs(z_scores) >= 3]
+print(f"\n Outliers detected: {len(outliers)}")
+selected_df = selected_df[np.abs(z_scores) < 3]
+
+plt.figure(figsize=(12, 6))
+selected_df.hist(bins=10, figsize=(12, 6), edgecolor='black')
+plt.suptitle(" Feature Distributions", fontsize=16)
+plt.show()
+
+plt.figure(figsize=(6, 4))
+sns.boxplot(x=selected_df['Salary'])
+plt.title(" Salary Boxplot")
+plt.show()
+
+plt.figure(figsize=(6, 4))
+sns.heatmap(selected_df.corr(), annot=True, cmap='coolwarm', fmt=".2f")
+plt.title(" Feature Correlation Heatmap")
+plt.show()
+
+print("\n Cleaned Dataset:\n", selected_df)
+print("\n Final Dataset Shape:", selected_df.shape)
